@@ -1,0 +1,96 @@
+# Mots de données du jeu qui sont des adresses à relocaliser (adresse d'origine du mot).
+# Trouvés par lecture du code ou signalés par le simulateur SMS en mode garde.
+8002    # en-tête : table des sprites ($704B), lue par l'OS7 (WR_SPR_NM_TBL, $1C9A)
+8004    # en-tête : ordre des sprites ($702B), lu par l'OS7 ($1C82)
+8006    # en-tête : tampon de travail ($70CB)
+8008    # en-tête : tampon des manettes ($7000), lu par POLLER ($11C8) et le jeu ($D2EA)
+# table des morceaux $B0BE (SOUND_INIT) : entrées (données du morceau, zone de canal en RAM) -> 2e mot
+B0C0
+B0C4
+B0C8
+B0CC
+B0D0
+B0D4
+B0D8
+B0DC
+B0E0
+B0E4
+B0E8
+B0EC
+B0F0
+B0F4
+B0F8
+B0FC
+B100
+B104
+B108
+B10C
+B110
+B114
+B118
+B11C
+B120
+B124
+B128
+B12C
+B130
+B134
+B138
+B13C
+B140
+B144
+B148
+B14C
+B150
+B154
+B158
+B15C
+B160
+B164
+B168
+B16C
+B170
+B174
+B178
+B17C
+B180
+B184
+B188
+B18C
+B190
+B194
+B198
+B19C
+B1A0
+B1A4
+# table du moteur d'animation $9EE0 (5 octets : case RAM, sprite RAM, nombre)
+9EE0
+9EE5
+9EEA
+9EEF
+9EF4
+9EF6
+9EF9
+9EFB
+9EFE
+9F00
+# $CB1C : table par écran (SCREEN) : (source, longueur) des objets copiés en $729E
+CBB4
+CBB8
+CBBC
+CBC0
+CBC4
+# enregistrements de 6 octets recopiés en $6FE7-$6FEC ($EC97, $ECDF, $ED14) : nombre, valeur, puis deux
+# pointeurs vers des listes de noms ($6FE9/$6FEB -> $6FE1, source d'un RST $08 en $EDB4) ; vu par
+# la comparaison du décor (lockstep --screens), cellules 689-693 au tour 7005
+EEBF
+EEC1
+EEC5
+EEC7
+EECB
+EECD
+# état initial des 3 blocs de 10 octets $6FC0-$6FDD (recopié de $EE9F en $EC77) : octets 4-5 de
+# chaque bloc = pointeur de la liste de noms (devient $6FE1)
+EEA3
+EEAD
+EEB7

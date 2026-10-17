@@ -1,0 +1,99 @@
+# Fichier de noms UNIQUE, lu par tools/disasm.py (et tools/porting.py).
+# Format : portée  adresse  nom  [entry]  ; commentaire d'une ligne
+#   portée « * » : global (RAM, OS7, EOS, constantes) -> src/names.inc (EQU)
+#   portée « boot », « f01 »..« f10 » : étiquette de code/données dans ce module
+#   « entry » : point d'entrée pour la descente récursive
+# N'y entre que ce qui est vérifié (simulation ou lecture du code appelant) ;
+# sinon le commentaire commence par « HYP: ».
+
+# --- OS7 (ROM $0000-$1FFF, carte mémoire 3) : vérifiés par les ports touchés en simulation
+*  1F61  OS7_PLAY_SONGS        ; écrit le port son $FF (appelé 1x/trame par la NMI)
+*  1F82  OS7_FILL_VRAM         ; écrit le VDP ($BE/$BF)
+*  1FC4  OS7_WR_SPR_NM_TBL     ; copie la table de sprites RAM vers la VRAM (A = nombre)
+*  1FCD  OS7_REQUEST_SIGNAL    ; crée une minuterie (HL = trames) -> A = numéro
+*  1FD0  OS7_TEST_SIGNAL       ; A = minuterie ; NZ si échue (boucle principale)
+*  1FD3  OS7_TIME_MGR          ; fait avancer les minuteries (NMI, 1x/trame)
+*  1FD9  OS7_WRITE_REGISTER    ; HYP: écrit un registre VDP (B = registre, C = valeur)
+*  1FDC  OS7_READ_REGISTER     ; lit l'état VDP (in $BF) -> A
+*  1FDF  OS7_WRITE_VRAM        ; écrit le VDP ($BE/$BF)
+*  1FEB  OS7_POLLER            ; lit les manettes (in $FC/$FF, out $80/$C0) -> tampon $7000
+*  1FF4  OS7_SOUND_MAN         ; gestion des canaux son (NMI, 1x/trame)
+*  1FFD  OS7_RAND_GEN          ; générateur pseudo-aléatoire de l'OS7
+*  1FB8  OS7_INIT_TABLE        ; HYP: vecteur cité en $8051 (enveloppe RST)
+
+# --- EOS (RAM $E000-$FFFF, table de sauts en $FC30) : vérifiés par lecture du code EOS
+*  FC1A  EOS_GAME_MAP          ; octet de carte mémoire « jeu » (3 = OS7 + RAM), lu par l'amorce
+*  FC45  EOS_END_RD_1_BLOCK    ; A = unité ; NC : en cours ; C+Z : fini ; C+NZ : erreur
+*  FC54  EOS_FIND_DCB          ; A = unité -> IY = DCB
+*  FC63  EOS_WRITE_STRING      ; écrit une chaîne vers l'unité 2 (imprimante) ; messages d'erreur
+*  FC66  EOS_WRITE_CHAR        ; écrit A vers l'unité 2 (imprimante)
+*  FCA2  EOS_START_RD_1_BLOCK  ; A = unité, HL = tampon, BCDE = bloc (DCB commande 4)
+*  FCAB  EOS_START_WR_1_BLOCK  ; même chose en écriture (DCB commande 3)
+*  FD14  EOS_SET_MEMORY_MAP    ; out ($7F),A et mémorise en $FD6E
+*  FD6F  EOS_BOOT_DEVICE       ; unité de démarrage (8 = cassette 1), lue par le chargeur du jeu
+
+# --- RAM du jeu : vérifiée en simulation ou par le code qui l'utilise
+*  7000  CTRL_BUFFER           ; tampon des manettes de l'OS7 (en-tête $8008) ; pavé J1 en $7006
+*  702B  SPR_ORDER             ; ordre d'affichage des 32 sprites (tourne à chaque NMI : clignotement)
+*  704B  SPR_TABLE             ; table des sprites en RAM (Y, X, motif, couleur) x 32 -> VRAM par la NMI
+*  70D3  FRAME_FLAG            ; mis à 1 par le jeu, remis à 0 par la NMI ($80B2) : attente de trame ($8BE4)
+*  70D4  NMI_LOCK              ; bit 0 : VDP occupé (enveloppes RST) ; bit 7 : NMI différée
+*  70F7  LEVEL_BCD             ; compteur d'étapes jouées +1, en BCD (affiché « BONUS nn » ; 09 à l'étape 8, vu)
+*  70F8  STAGE_CYCLE12         ; 1 (posé en $915A) : cycle de 12 étapes, sinon 8 ($CA16)
+*  70FA  NB_PLAYERS            ; nombre de joueurs (1 ou 2, vu en simulation)
+*  70FB  CUR_PLAYER            ; joueur courant 1/2 (vu : alterne aux morts ; choisit la manette, $C8CF)
+*  70FD  SCREEN                ; type d'écran 0-4 de l'étape (posé en $8262) ; 0,1,0,2,1,0,1,3,4,2,3,4 (vu)
+*  70FE  STAGE                 ; étape 0-11 ; mise à 0 en $CACF, +1 en $CA2A ; choisit la séquence ($7829)
+*  6F6A  FILE_QUEUE            ; file circulaire des demandes de fichiers cassette ($80 vide, $FF fin)
+*  6F7E  LOAD_WAIT             ; 1 : la séquence attend la fin du chargement ($8289)
+*  6F7F  LOAD_BUSY             ; 1 : chargement en cours (attendu en $8144, $8179)
+*  7103  STAGE_RESULT          ; résultat rendu par la boucle d'étape (1 = gagnée), $C945
+*  7106  P1_LIVES              ; vies du joueur 1 (5 au départ, -1 à chaque mort, vu en simulation)
+*  710F  P1_SCORE              ; score du joueur 1, 6 chiffres ASCII (vu : « 049000 » affiché)
+*  7115  P2_LIVES              ; vies du joueur 2 (vu : 5 -> 4 à la mort du joueur 2)
+*  711E  P2_SCORE              ; score du joueur 2, 6 chiffres ASCII
+*  7126  TICK_TIMER            ; minuterie OS7 de game_tick, testée en $C834
+*  7145  ANIM_SIGNAL           ; minuterie OS7 du moteur d'animation (créée en $8873, testée en $8879)
+*  7146  SCRIPT_ARGS           ; arguments de l'opcode de cinématique en cours, copiés par $8917 (2 à 9 octets ; restes des précédents au-delà)
+*  72FB  ZONE_NEXT             ; suite de la liste de zones après une entrée $FE ($D25B, relu en $D26C)
+*  713D  LOAD_FILE             ; fichier cassette en cours de chargement ($FF : aucun)
+*  713E  LOAD_STATE            ; étape du chargeur (0 repos, 2 lecture, 3 état, 4 contrôle)
+*  713F  LOAD_CMD              ; $81 lecture, $82 écriture, 0 : rien ; erreur sinon
+*  7140  LOAD_ADDR             ; adresse du bloc en cours (mot)
+*  7142  LOAD_BLOCK            ; numéro du bloc en cours (mot)
+*  7144  LOAD_COUNT            ; blocs restant à lire
+*  720E  JR_OBJ                ; Junior : +0 pose, +1 X, +3 Y (lu par $DBD3 pour ses 3 sprites)
+*  720F  JR_X                  ; X de Junior (pixels)
+*  7211  JR_Y                  ; Y de Junior (pixels, 0 = haut)
+*  6FB3  KEYS                  ; écran 1 : 6 clés x (X, Y), Y = $98 en bas ; copiées de $EA25 par $EA15 (lu)
+*  7130  KEYS_LOCKED           ; écran 1 : clés posées ; 6 -> étape gagnée ($E811, lu)
+*  72EA  JR_STATE              ; état de Junior : 0 au sol, 1 accroché (liane/chaîne), 2 chute, 3 saut (vu en simulation)
+*  7213  OBJECTS               ; 13 objets x 10 octets, objet k -> sprite k+3 ($7057+4k) (boucle $DF38)
+*  7297  MAIN_SP               ; SP sauvé à l'entrée de la boucle principale ($C80F)
+*  73C5  VDP_STATUS_COPY       ; copie de l'état VDP (NMI, OS7_READ_REGISTER)
+*  7DD4  FILE_TABLE_PTR        ; pointeur vers la table des fichiers cassette ($7DD6)
+*  7DD6  FILE_TABLE            ; 10 x (adresse, bloc, nombre de blocs)
+
+# --- code (portée = module chargé à cette adresse)
+boot  C800  boot_start  entry  ; amorce : lit le fichier 1 (blocs 1-7) en $7800, puis saute à ($800A)
+f01   8000  cart_header        ; en-tête façon cartouche ColecoVision ($55AA remplacé par $1111 par l'amorce)
+f01   8021  nmi_vector  entry  ; NMI de l'OS7 -> jp nmi_handler
+f01   8078  nmi_handler entry  ; NMI : sprites, POLLER, TIME_MGR, chargeur cassette, son
+f01   8108  game_entry  entry  ; entrée du jeu (B = unité de démarrage)
+f01   8188  records_page       ; fin de partie : charge le fichier 9, paramètres ($F284), exécute la page des records (appel en $8193) ; remplacé dans le portage SMS
+f01   8196  records_done       ; suite de la page des records : séquences $12, $14, puis retour au titre ($8122) si A <> 1
+f01   843E  tape_poll   entry  ; chargeur cassette, machine à états appelée par la NMI
+f01   8584  tape_load_file     ; A = numéro de fichier : lance son chargement en tâche de fond
+f01   85A3  tape_manager       ; appelé par la NMI après tape_poll
+f01   825B  section_start      ; A = séquence (table $831F) : pose SCREEN, charge des fichiers, prépare la VRAM
+f01   88D8  script_step        ; interpréteur des cinématiques : opcode = octet & $1F, tables $8936/$8976
+f01   8917  script_args        ; copie BC octets d'arguments du script vers SCRIPT_ARGS ($7146)
+f04   D1FE  zone_scan          ; parcourt une liste de zones : 3 octets (valeur, bornes) ; $FE + mot -> entrée ailleurs ; $FD ($D282) puis fin ; $FF fin
+f04   D233  zone_lists         ; HL = table des listes de zones selon SCREEN ($CF64 $CFEE $D027 $D0A8 $D114)
+f04   C80F  main_loop          ; boucle d'une étape : ordonnanceur sur minuteries OS7 ; rend A = résultat
+f04   E7AC  win_check          ; à chaque tour de boucle : position de Junior -> étape gagnée/perdue (selon SCREEN)
+f05   E82B  stage_won          ; STAGE_RESULT = 1 et sortie de la tâche
+f04   C945  stage_end          ; fin d'étape (A = résultat) : mort, changement de joueur ou étape suivante
+f04   CA00  next_stage         ; étape gagnée : STAGE+1 (bouclage à 11), LEVEL_BCD+1
+f04   DF2E  game_tick          ; tour de jeu (1 fois/trame en partie) : Junior, objets, ennemis
+f04   DBD3  jr_to_sprites      ; recopie Junior ($720E) dans ses 3 sprites ($704B)

@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+sms/build/
+
+# Fichiers d'origine (protégés par le droit d'auteur) : à ajouter soi-même, voir README.md
+Rom Sources/
+
+# Produits par la construction depuis les fichiers d'origine
+sms/gen/os7.asm
+sms/gen/os7_sites.asm
+sms/gen/game_lo.asm
+sms/gen/game_hi.asm
+sms/gen/game_map.txt
+sms/gen/auto_tables.txt
+sms/gen/orig_*.bin
